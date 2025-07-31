@@ -37,8 +37,14 @@
 
   $: geom = shape.geometry;
 
-  $: midpoints = isTouch ? [] : geom.points.map((thisCorner, idx) => {
-    const nextCorner = idx === geom.points.length - 1 ? geom.points[0] : geom.points[idx + 1];
+  $: midpoints = isTouch ? [] : geom.points.reduce<{ point: [number, number], visible: boolean }[]>((all, thisCorner, idx) => {
+    const nextCorner = idx === geom.points.length - 1 
+      // Last point
+      ? (geom.closed ? geom.points[0] : undefined)
+      : geom.points[idx + 1];
+
+    if (!nextCorner)
+      return all;
     
     const [x, y] = getPathMidpoint(thisCorner, nextCorner);
 
@@ -48,8 +54,8 @@
     // Don't show if the distance between the corners is too small
     const visible = dist > MIN_CORNER_DISTANCE / viewportScale;
 
-    return { point: [x, y], visible };
-  });
+    return [...all, { point: [x, y], visible }];
+  }, []);
 
   /** Handle hover state **/
   const onEnterHandle = () => isHandleHovered = true;
