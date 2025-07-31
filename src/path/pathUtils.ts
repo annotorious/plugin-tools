@@ -43,6 +43,28 @@ export const calculateTangentDirection = (
   return [tangentX, tangentY];
 }
 
+export const getPathMidpoint = (start: PolylinePoint, end: PolylinePoint) => {
+  if (start.type === 'CORNER' && end.type === 'CORNER') {
+    // Trivial case
+    return [
+      (start.point[0] + end.point[0]) / 2,
+      (start.point[1] + end.point[1]) / 2
+    ];
+  }
+
+  const cp1 = start.type === 'CORNER' ? start.point : start.outHandle || start.point;
+  const cp2 = end.type === 'CORNER' ? end.point : end.inHandle || end.point;
+
+  /** Cf. https://www.johndcook.com/blog/2009/12/21/bezier-basics/ **/
+  const t = 0.5;
+  const u = 1 - t;
+
+  return [
+    u*u*u * start.point[0] + 3*u*u*t * cp1[0] + 3*u*t*t * cp2[0] + t*t*t * end.point[0],
+    u*u*u * start.point[1] + 3*u*u*t * cp1[1] + 3*u*t*t * cp2[1] + t*t*t * end.point[1]
+  ];
+}
+
 export const togglePolylineCorner = (shape: Polyline, cornerIdx: number, viewportScale: number): Polyline => {
   const corner = shape.geometry.points[cornerIdx];
   

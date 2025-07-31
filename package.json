@@ -44,7 +44,7 @@
     "vite-plugin-dts": "^4.5.4"
   },
   "peerDependencies": {
-    "@annotorious/annotorious": "^3.6.4",
-    "@annotorious/openseadragon": "^3.6.4"
+    "@annotorious/annotorious": "^3.6.5",
+    "@annotorious/openseadragon": "^3.6.5"
   }
 }
