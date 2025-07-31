@@ -291,6 +291,8 @@
 const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
     evt.stopPropagation();
 
+    selectedCorner = null;
+
     const points = [
       ...geom.points.slice(0, midpointIdx + 1),
       { type: 'CORNER', point: midpoints[midpointIdx].point },
