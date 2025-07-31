@@ -326,10 +326,31 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
     }
   }
 
+  const onDeleteSelected = () => {
+    if (!selectedCorner) return;
+
+    // Open path needs 2 points min, closed path needs 3
+    const minLen = geom.closed ? 4 : 3;
+    if (geom.points.length < minLen) return;
+
+    const points = geom.points.filter((_, i) => i !== selectedCorner);
+    const bounds = boundsFromPoints(approximateAsPolygon(points, geom.closed));
+
+    dispatch('change', {
+      ...shape,
+      geometry: { points, bounds }
+    });
+
+    selectedCorner = null;
+  }
+
   onMount(() => {
     const onKeyDown = (evt: KeyboardEvent) => {
       if (evt.altKey && !isAltPressed)
         isAltPressed = true;
+
+      if (evt.key === 'Delete' || evt.key === 'Backspace')
+        onDeleteSelected();
     }
   
     const onKeyUp = (evt: KeyboardEvent) => {
