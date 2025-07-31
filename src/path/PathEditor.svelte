@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onMount, tick } from 'svelte';
   import { Editor, Handle, MidpointHandle } from '@annotorious/annotorious/src';
   import { approximateAsPolygon, boundsFromPoints, computeSVGPath, getMaskDimensions, isTouch } from '@annotorious/annotorious';
   import type { Polyline, PolylineGeometry, PolylinePoint, Shape, Transform } from '@annotorious/annotorious';
@@ -288,6 +288,42 @@
     } as Polyline;
   }
 
+const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
+    evt.stopPropagation();
+
+    const points = [
+      ...geom.points.slice(0, midpointIdx + 1),
+      { type: 'CORNER', point: midpoints[midpointIdx].point },
+      ...geom.points.slice(midpointIdx + 1)
+    ] as PolylinePoint[];
+
+    const bounds = boundsFromPoints(approximateAsPolygon(points, geom.closed));
+
+    dispatch('change', {
+      ...shape,
+      geometry: { points, bounds, closed: geom.closed }
+    });
+
+    await tick();
+
+    // Find the newly inserted handle and dispatch grab event
+    const newHandle = [...document.querySelectorAll(`.a9s-handle`)][midpointIdx + 1];
+    if (newHandle?.firstChild) {
+      const newEvent = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: evt.clientX,
+        clientY: evt.clientY,
+        pointerId: evt.pointerId,
+        pointerType: evt.pointerType,
+        isPrimary: evt.isPrimary,
+        buttons: evt.buttons
+      });
+
+      newHandle.firstChild.dispatchEvent(newEvent);
+    }
+  }
+
   onMount(() => {
     const onKeyDown = (evt: KeyboardEvent) => {
       if (evt.altKey && !isAltPressed)
@@ -395,7 +431,8 @@
     <MidpointHandle 
       x={point[0]}
       y={point[1]}
-      scale={viewportScale} />
+      scale={viewportScale} 
+      on:pointerdown={onAddPoint(visibleMidpoint)} />
   {/if}
 </Editor>
 
