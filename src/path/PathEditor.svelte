@@ -1,15 +1,24 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
-  import { Editor, Handle } from '@annotorious/annotorious/src';
-  import { approximateAsPolygon, boundsFromPoints, computeSVGPath, isTouch } from '@annotorious/annotorious';
+  import { Editor, Handle, MidpointHandle } from '@annotorious/annotorious/src';
+  import { approximateAsPolygon, boundsFromPoints, computeSVGPath, getMaskDimensions, isTouch } from '@annotorious/annotorious';
   import type { Polyline, PolylineGeometry, PolylinePoint, Shape, Transform } from '@annotorious/annotorious';
-  import { togglePolylineCorner } from './pathUtils';
+  import { getPathMidpoint, togglePolylineCorner } from './pathUtils';
   import BezierHandle from './BezierHandle.svelte';
 
   const dispatch = createEventDispatcher<{ change: Polyline }>();
   
   /** Time difference (milliseconds) required for registering a click/tap **/
   const CLICK_THRESHOLD = 250;
+
+  /** Minimum distance (px) to shape required for midpoints to show */
+  const MIN_HOVER_DISTANCE = 1000;
+
+  /** Minimum distance (px) between corners required for midpoints to show **/
+  const MIN_CORNER_DISTANCE = 12;
+
+  /** Needed for the <mask> element **/
+  const MIDPOINT_SIZE = 4.5;
 
   /** Props */
   export let shape: Polyline;
@@ -19,6 +28,7 @@
   export let svgEl: SVGSVGElement;
 
   /** Drawing tool layer **/
+  let visibleMidpoint: number | undefined;
   let isHandleHovered = false;
   let lastHandleClick: number | null = null;
   let selectedCorner: number | null = null;
@@ -27,9 +37,57 @@
 
   $: geom = shape.geometry;
 
+  $: midpoints = isTouch ? [] : geom.points.map((thisCorner, idx) => {
+    const nextCorner = idx === geom.points.length - 1 ? geom.points[0] : geom.points[idx + 1];
+    
+    const [x, y] = getPathMidpoint(thisCorner, nextCorner);
+
+    const dist = Math.sqrt( 
+      Math.pow(nextCorner.point[0] - x, 2) + Math.pow(nextCorner.point[1] - y, 2));
+
+    // Don't show if the distance between the corners is too small
+    const visible = dist > MIN_CORNER_DISTANCE / viewportScale;
+
+    return { point: [x, y], visible };
+  });
+
   /** Handle hover state **/
   const onEnterHandle = () => isHandleHovered = true;
   const onLeaveHandle = () => isHandleHovered = false;
+
+  /** Determine visible midpoint, if any **/
+  const onPointerMove = (evt: PointerEvent) => {
+    // if (selectedCorners.length > 0 || !midpoints.some(m => m.visible)) {
+    //   visibleMidpoint = undefined;
+    //   return;
+    // }
+
+    const [px, py] = transform.elementToImage(evt.offsetX, evt.offsetY);
+
+    const getDistSq = (pt: number[]) =>
+      Math.pow(pt[0] - px, 2) + Math.pow(pt[1] - py, 2);
+    
+    const closestCorner = geom.points.reduce((closest, corner) =>
+      getDistSq(corner.point) < getDistSq(closest.point) ? corner : closest);
+
+    const closestVisibleMidpoint = midpoints
+      .filter(m => m.visible)
+      .reduce((closest, midpoint) =>
+        getDistSq(midpoint.point) < getDistSq(closest.point) ? midpoint : closest);
+
+    // Show midpoint if the mouse is at least within THRESHOLD distance
+    // of the midpoint or the closest corner. (Basically a poor man's shape buffering).
+    const threshold = Math.pow(MIN_HOVER_DISTANCE / viewportScale, 2);
+
+    const shouldShow = 
+      getDistSq(closestCorner.point) < threshold ||
+      getDistSq(closestVisibleMidpoint.point) < threshold;
+
+    if (shouldShow)
+      visibleMidpoint = midpoints.indexOf(closestVisibleMidpoint);
+    else
+      visibleMidpoint = undefined;
+  }
 
   const onShapePointerUp = () => selectedCorner = null;
 
@@ -235,16 +293,24 @@
         isAltPressed = false;
     }
 
+    svgEl.addEventListener('pointermove', onPointerMove);
+
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
 
     return () => {
+      svgEl.removeEventListener('pointermove', onPointerMove);
+
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     }
   });
 
   $: d = computeSVGPath(geom);
+
+  $: mask = getMaskDimensions(geom.bounds, MIDPOINT_SIZE / viewportScale);
+
+  const maskId = `polygon-mask-${Math.random().toString(36).substring(2, 12)}`;
 </script>
 
 <Editor
@@ -257,14 +323,26 @@
   on:release
   let:grab={grab}>
 
+  <defs>
+    {#if (visibleMidpoint !== undefined && !isHandleHovered)}
+      {@const { point } = midpoints[visibleMidpoint]}
+      <mask id={maskId}  class="a9s-polygon-editor-mask">
+        <rect x={mask.x} y={mask.y} width={mask.w} height={mask.h} /> 
+        <circle cx={point[0]} cy={point[1]} r={MIDPOINT_SIZE / viewportScale} />
+      </mask>
+    {/if}
+  </defs>
+
   <path
     class={`a9s-outer polyline ${shape.geometry.closed ? 'closed' : 'open'}`}
+    mask={`url(#${maskId})`}
     on:pointerup={onShapePointerUp}
     on:pointerdown={grab('SHAPE')}
     d={d} />
 
   <path
     class={`a9s-inner polyline a9s-shape-handle ${shape.geometry.closed ? 'closed' : 'open'}`}
+    mask={`url(#${maskId})`}
     style={computedStyle}
     on:pointerup={onShapePointerUp}
     on:pointerdown={grab('SHAPE')}
@@ -305,10 +383,26 @@
       on:pointerdown={grab(`CORNER-${idx}`)}
       on:pointerup={onHandlePointerUp(idx)} />
   {/each}
+
+  {#if (visibleMidpoint !== undefined && !isHandleHovered)}
+    {@const { point } = midpoints[visibleMidpoint]}
+    <MidpointHandle 
+      x={point[0]}
+      y={point[1]}
+      scale={viewportScale} />
+  {/if}
 </Editor>
 
 <style>
   :global(.a9s-annotationlayer .a9s-annotation) path.polyline.open {
     fill: transparent !important;
+  }
+
+  mask.a9s-polygon-editor-mask > rect {
+    fill: #fff;
+  }
+
+  mask.a9s-polygon-editor-mask > circle {
+    fill: #000;
   }
 </style>
