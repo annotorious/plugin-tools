@@ -44,8 +44,16 @@ export const calculateTangentDirection = (
 }
 
 export const getPathMidpoint = (start: PolylinePoint, end: PolylinePoint) => {
-  const cp1 = start.outHandle || start.point;
-  const cp2 = end.inHandle || end.point;
+  if (start.type === 'CORNER' && end.type === 'CORNER') {
+    // Trivial case
+    return [
+      (start.point[0] + end.point[0]) / 2,
+      (start.point[1] + end.point[1]) / 2
+    ];
+  }
+
+  const cp1 = start.type === 'CORNER' ? start.point : start.outHandle || start.point;
+  const cp2 = end.type === 'CORNER' ? end.point : end.inHandle || end.point;
 
   /** Cf. https://www.johndcook.com/blog/2009/12/21/bezier-basics/ **/
   const t = 0.5;
