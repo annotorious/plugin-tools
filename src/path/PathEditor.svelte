@@ -1,11 +1,17 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, tick } from 'svelte';
   import { Editor, Handle, MidpointHandle } from '@annotorious/annotorious/src';
-  import { approximateAsPolygon, boundsFromPoints, computeSVGPath, getMaskDimensions, isTouch } from '@annotorious/annotorious';
   import type { Polyline, PolylineGeometry, PolylinePoint, Shape, Transform } from '@annotorious/annotorious';
   import { getPathMidpoint, togglePolylineCorner } from './pathUtils';
   import BezierHandle from './BezierHandle.svelte';
-
+  import { 
+    approximateAsPolygon, 
+    boundsFromPoints, 
+    computeSVGPath, 
+    getMaskDimensions, 
+    isTouch 
+  } from '@annotorious/annotorious';
+  
   const dispatch = createEventDispatcher<{ change: Polyline }>();
   
   /** Time difference (milliseconds) required for registering a click/tap **/
@@ -63,11 +69,6 @@
 
   /** Determine visible midpoint, if any **/
   const onPointerMove = (evt: PointerEvent) => {
-    // if (selectedCorners.length > 0 || !midpoints.some(m => m.visible)) {
-    //   visibleMidpoint = undefined;
-    //   return;
-    // }
-
     const [px, py] = transform.elementToImage(evt.offsetX, evt.offsetY);
 
     const getDistSq = (pt: number[]) =>
