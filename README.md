@@ -1,6 +1,8 @@
 # Annotorious Tools Plugin
 
-A plugin that adds additional drawing tools to [Annotorious](https://annotorious.dev/).
+An Annotorious plugin that adds additional drawing tools.
+
+<img src="screenshot.jpg" style="width:480px" alt="A screenshot of the Annotorious Tools plugin, showing ellipse and path annotations." />
 
 ## Features
 
