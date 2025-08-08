@@ -328,7 +328,7 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
   }
 
   const onDeleteSelected = () => {
-    if (!selectedCorner) return;
+    if (selectedCorner === null) return;
 
     // Open path needs 2 points min, closed path needs 3
     const minLen = geom.closed ? 4 : 3;
@@ -339,7 +339,11 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
 
     dispatch('change', {
       ...shape,
-      geometry: { points, bounds }
+      geometry: { 
+        closed: shape.geometry.closed,
+        bounds,
+        points 
+      }
     });
 
     selectedCorner = null;
