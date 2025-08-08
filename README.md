@@ -43,7 +43,7 @@ Create polylines made of straight or curved segments.
 
 ## Usage
 
-The plugin works with both Annotorious versions, image and OpenSeadragon.
+The plugin works with both Annotorious versions: **Image Annotator** and **OpenSeadragon Annotator**.
 
 ### Image Annotator
 
