@@ -2,7 +2,7 @@
 
 An Annotorious plugin that adds additional drawing tools.
 
-<img src="screenshot.jpg" style="width:480px" alt="A screenshot of the Annotorious Tools plugin, showing ellipse and path annotations." />
+<img src="screenshot.jpg" style="width:540px" alt="A screenshot of the Annotorious Tools plugin, showing ellipse and path annotations." />
 
 ## Features
 
