@@ -112,7 +112,7 @@
 
   /** Selection handling logic **/
   const onHandlePointerUp = (idx: number) => () => {
-    if (!lastHandleClick || isTouch) return;
+    if (!lastHandleClick) return;
 
     // Drag, not click
     if (performance.now() - lastHandleClick > CLICK_THRESHOLD) return;
