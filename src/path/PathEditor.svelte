@@ -403,20 +403,21 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
     {/if}
   </defs>
 
-  <path
-    class={`a9s-outer polyline ${shape.geometry.closed ? 'closed' : 'open'}`}
-    mask={`url(#${maskId})`}
-    on:pointerup={onShapePointerUp}
-    on:pointerdown={grab('SHAPE')}
-    d={d} />
+  <g mask={`url(#${maskId})`}>
+    <rect x={mask.x} y={mask.y} width={mask.w} height={mask.h} class="mask-buffer" /> 
+    <path
+      class={`a9s-outer polyline ${shape.geometry.closed ? 'closed' : 'open'}`}
+      on:pointerup={onShapePointerUp}
+      on:pointerdown={grab('SHAPE')}
+      d={d} />
 
-  <path
-    class={`a9s-inner polyline a9s-shape-handle ${shape.geometry.closed ? 'closed' : 'open'}`}
-    mask={`url(#${maskId})`}
-    style={computedStyle}
-    on:pointerup={onShapePointerUp}
-    on:pointerdown={grab('SHAPE')}
-    d={d} />
+    <path
+      class={`a9s-inner polyline a9s-shape-handle ${shape.geometry.closed ? 'closed' : 'open'}`}
+      style={computedStyle}
+      on:pointerup={onShapePointerUp}
+      on:pointerdown={grab('SHAPE')}
+      d={d} />
+  </g>
 
   <!-- Bezier handles only on the selected corner -->
   {#if selectedCorner !== null}
@@ -475,5 +476,9 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
 
   mask.a9s-polygon-editor-mask > circle {
     fill: #000;
+  }
+
+  .mask-buffer {
+    fill: none;
   }
 </style>
