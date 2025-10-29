@@ -36,8 +36,9 @@ Create polylines made of straight or curved segments.
 
 **Editing:**
 
-- **Toggle corner/curve:** Click a point to switch between corner and smooth curve (handles will appear).
-- **Adjust curvature:**: Drag the handles to refine the shape.
+- **Delete points:** Press `Del` or `Backspace` while a point is selected to remove that point from the path.
+- **Toggle corner/curve:** Hold `Alt` (or `Option` on Mac) and click a point to switch between corner and smooth curve (handles will appear).
+- **Adjust curvature:** Drag the handles to refine the shape.
 - **Sharp corner between curves:** Hold `Alt` (or `Option` on Mac) while dragging a handle to move it independently.
 - **Re-link handles:** Double-click the point to snap handles back together.
 

@@ -69,6 +69,11 @@
 
   /** Determine visible midpoint, if any **/
   const onPointerMove = (evt: PointerEvent) => {
+    if (selectedCorner !== null || !midpoints.some(m => m.visible)) {
+      visibleMidpoint = undefined;
+      return;
+    }
+
     const [px, py] = transform.elementToImage(evt.offsetX, evt.offsetY);
 
     const getDistSq = (pt: number[]) =>
@@ -117,22 +122,21 @@
     // Drag, not click
     if (performance.now() - lastHandleClick > CLICK_THRESHOLD) return;
 
-    // Click on a CORNER instantly selects and converts to curve
-    const { type } = geom.points[idx];
-    
-    if (type === 'CORNER') {
-      selectedCorner = idx;
+    const isSelected = selectedCorner === idx;
 
+    // Clicking on a handle with alt key pressed toggles between corner/curve
+    if (isAltPressed) {
       const polyline = togglePolylineCorner(shape, idx, viewportScale);
       dispatch('change', polyline);
+
+      // If was not selected, select it now
+      if (!isSelected) {
+        selectedCorner = idx;
+      }
     } else {
-      const isSelected = selectedCorner === idx;
       if (isSelected) {
-        // If already selected, toggle to corner
-        const polyline = togglePolylineCorner(shape, idx,viewportScale);
-        dispatch('change', polyline);
+        selectedCorner = null;
       } else {
-        // Just select
         selectedCorner = idx;
       }
     }
@@ -447,6 +451,7 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
       x={pt.point[0]}
       y={pt.point[1]}
       scale={viewportScale}
+      selected={selectedCorner === idx}
       on:dblclick={onDoubleClick(idx)}
       on:pointerenter={onEnterHandle}
       on:pointerleave={onLeaveHandle}
