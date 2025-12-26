@@ -144,9 +144,9 @@
       const polyline = togglePolylineCorner(shape, idx, viewportScale);
       dispatch('change', polyline);
 
-      // If was not selected, select it now
-      if (!isSelected) {
-        selectedCorners = [...selectedCorners, idx];
+      // Ensure the toggled corner is selected, and deselect others
+      if (!isSelected || selectedCorners.length > 1) {
+        selectedCorners = [idx];
       }
     } else if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
       if (isSelected) 
