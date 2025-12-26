@@ -37,7 +37,7 @@
   let visibleMidpoint: number | undefined;
   let isHandleHovered = false;
   let lastHandleClick: number | null = null;
-  let selectedCorner: number | null = null;
+  let selectedCorners: number[] = [];
 
   let isAltPressed = false;
 
@@ -69,7 +69,7 @@
 
   /** Determine visible midpoint, if any **/
   const onPointerMove = (evt: PointerEvent) => {
-    if (selectedCorner !== null || !midpoints.some(m => m.visible)) {
+    if (selectedCorners.length > 0 || !midpoints.some(m => m.visible)) {
       visibleMidpoint = undefined;
       return;
     }
@@ -101,7 +101,22 @@
       visibleMidpoint = undefined;
   }
 
-  const onShapePointerUp = () => selectedCorner = null;
+  /** 
+   * SVG element keeps losing focus when interacting with 
+   * shapes–this function refocuses.
+   */
+  const reclaimFocus = () => {
+    if (document.activeElement !== svgEl)
+      svgEl.focus();
+  }
+
+  /**
+   * De-selects all corners and reclaims focus.
+   */
+  const onShapePointerUp = () => {
+    selectedCorners = [];
+    reclaimFocus();
+  }
 
   /**
    * Updates state, waiting for potential click.
@@ -116,13 +131,13 @@
   }
 
   /** Selection handling logic **/
-  const onHandlePointerUp = (idx: number) => () => {
+  const onHandlePointerUp = (idx: number) => (evt: PointerEvent) => {
     if (!lastHandleClick) return;
 
     // Drag, not click
     if (performance.now() - lastHandleClick > CLICK_THRESHOLD) return;
 
-    const isSelected = selectedCorner === idx;
+    const isSelected = selectedCorners.includes(idx);
 
     // Clicking on a handle with alt key pressed toggles between corner/curve
     if (isAltPressed) {
@@ -131,14 +146,22 @@
 
       // If was not selected, select it now
       if (!isSelected) {
-        selectedCorner = idx;
+        selectedCorners = [...selectedCorners, idx];
       }
+    } else if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
+      if (isSelected) 
+        selectedCorners = selectedCorners.filter(i => i !== idx);
+      else
+        selectedCorners = [...selectedCorners, idx];
     } else {
-      if (isSelected) {
-        selectedCorner = null;
-      } else {
-        selectedCorner = idx;
-      }
+      if (isSelected && selectedCorners.length > 1)
+        // Keep selected, de-select others
+        selectedCorners = [idx]
+      else if (isSelected)
+        // De-select
+        selectedCorners = [];
+      else
+        selectedCorners = [idx];
     }
   }
 
@@ -296,7 +319,7 @@
 const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
     evt.stopPropagation();
 
-    selectedCorner = null;
+    // selectedCorner = null;
 
     const points = [
       ...geom.points.slice(0, midpointIdx + 1),
@@ -332,13 +355,11 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
   }
 
   const onDeleteSelected = () => {
-    if (selectedCorner === null) return;
-
     // Open path needs 2 points min, closed path needs 3
-    const minLen = geom.closed ? 4 : 3;
-    if (geom.points.length < minLen) return;
+    const minLen = geom.closed ? 3 : 2;
+    if (geom.points.length - selectedCorners.length < minLen) return;
 
-    const points = geom.points.filter((_, i) => i !== selectedCorner);
+    const points = geom.points.filter((_, i) => !selectedCorners.includes(i));
     const bounds = boundsFromPoints(approximateAsPolygon(points, geom.closed));
 
     dispatch('change', {
@@ -350,7 +371,7 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
       }
     });
 
-    selectedCorner = null;
+    selectedCorners = [];
   }
 
   onMount(() => {
@@ -423,8 +444,9 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
       d={d} />
   </g>
 
-  <!-- Bezier handles only on the selected corner -->
-  {#if selectedCorner !== null}
+  <!-- Bezier handles only when a single corner is selected -->
+  {#if selectedCorners.length === 1}
+    {@const selectedCorner = selectedCorners[0]}
     {@const corner = geom.points[selectedCorner]}
     {#if corner.type === 'CURVE'}
       {#if corner.inHandle}
@@ -451,7 +473,7 @@ const onAddPoint = (midpointIdx: number) => async (evt: PointerEvent) => {
       x={pt.point[0]}
       y={pt.point[1]}
       scale={viewportScale}
-      selected={selectedCorner === idx}
+      selected={selectedCorners.includes(idx)}
       on:dblclick={onDoubleClick(idx)}
       on:pointerenter={onEnterHandle}
       on:pointerleave={onLeaveHandle}
