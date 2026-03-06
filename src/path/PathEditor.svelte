@@ -139,7 +139,7 @@
 
     const isSelected = selectedCorners.includes(idx);
 
-    if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
+    if (selectedCorners.length > 0 && (evt.metaKey || evt.ctrlKey || evt.shiftKey)) {
       if (isSelected && selectedCorners.length > 1) 
         selectedCorners = selectedCorners.filter(i => i !== idx);
       else if (isSelected)
