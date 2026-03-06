@@ -139,8 +139,14 @@
 
     const isSelected = selectedCorners.includes(idx);
 
-    // Clicking on a handle with alt key pressed toggles between corner/curve
-    if (isAltPressed) {
+    if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
+      if (isSelected && selectedCorners.length > 1) 
+        selectedCorners = selectedCorners.filter(i => i !== idx);
+      else if (isSelected)
+        selectedCorners = [];
+      else
+        selectedCorners = [...selectedCorners, idx];
+    } else {
       const polyline = togglePolylineCorner(shape, idx, viewportScale);
       dispatch('change', polyline);
 
@@ -148,20 +154,6 @@
       if (!isSelected || selectedCorners.length > 1) {
         selectedCorners = [idx];
       }
-    } else if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
-      if (isSelected) 
-        selectedCorners = selectedCorners.filter(i => i !== idx);
-      else
-        selectedCorners = [...selectedCorners, idx];
-    } else {
-      if (isSelected && selectedCorners.length > 1)
-        // Keep selected, de-select others
-        selectedCorners = [idx]
-      else if (isSelected)
-        // De-select
-        selectedCorners = [];
-      else
-        selectedCorners = [idx];
     }
   }
 
